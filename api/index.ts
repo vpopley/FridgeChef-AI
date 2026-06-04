@@ -1,14 +1,11 @@
 import express from 'express';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const PORT = 3000;
-
-// FIX 1: Instantiate the app globally so Vercel can export it cleanly
 const app = express();
 
 // Increase payload limit for base64 images
@@ -23,7 +20,7 @@ const ai = new GoogleGenAI({
   }
 });
 
-// FIX 2: Listen for both endpoints to ensure Vercel rewrites don't throw 404 HTML pages
+// Listen for both endpoint variations to ensure smooth routing on Vercel
 app.post(['/api/analyze-fridge', '/analyze-fridge'], async (req, res) => {
   try {
     const { image, cuisine, dietaryMode } = req.body;
@@ -126,7 +123,6 @@ CONSTRAINTS
     // Clean the base64 string
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
 
-    // FIX 3: Swapped model identifier to 'gemini-2.5-flash' for production compatibility
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: [
@@ -146,30 +142,21 @@ CONSTRAINTS
 });
 
 async function startServer() {
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
+  const distPath = path.join(process.cwd(), 'dist');
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
-// 1. Export the app instance for Vercel FIRST (Now in scope!)
+// Export the app instance cleanly for the Vercel serverless environment
 export default app;
 
-// 2. Only start the local server if we aren't running inside Vercel's cloud environment
+// Only execute the local port engine if we are in development mode
 if (process.env.NODE_ENV !== 'production') {
   startServer();
 }
