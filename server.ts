@@ -169,9 +169,15 @@ CONSTRAINTS
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
-startServer();
+// 1. Export the app instance for Vercel FIRST
+export default app;
+
+// 2. Only start the local server if we aren't running inside Vercel's cloud environment
+if (process.env.NODE_ENV !== 'production') {
+  startServer();
+}
