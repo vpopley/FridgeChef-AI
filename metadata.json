@@ -1,0 +1,6 @@
+{
+  "name": "FridgeChef AI",
+  "description": "A professional culinary analyst and nutrition expert trained to identify ingredients from images and generate structured, personalized meal recommendations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

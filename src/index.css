@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-theme-bg: #F9F7F2;
+  --color-theme-ink: #1A1A1A;
+  --color-theme-accent: #4A5D4E;
+  --color-theme-accent-light: #E8EDE9;
+  --color-theme-border: #D1CEC7;
+  --color-theme-card: #FFFFFF;
+  --font-serif: 'Georgia', serif;
+  --font-sans: 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+  background-color: var(--color-theme-bg);
+  color: var(--color-theme-ink);
+}
+
+.prose {
+  --tw-prose-body: var(--color-theme-ink);
+  --tw-prose-headings: var(--color-theme-ink);
+  --tw-prose-links: var(--color-theme-accent);
+  --tw-prose-bold: var(--color-theme-ink);
+  --tw-prose-counters: var(--color-theme-accent);
+  --tw-prose-bullets: var(--color-theme-accent);
+  --tw-prose-hr: var(--color-theme-border);
+  --tw-prose-quotes: var(--color-theme-ink);
+  --tw-prose-quote-borders: var(--color-theme-accent);
+  font-size: 13px;
+}
+.prose-theme h2 {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: bold;
+  background-color: #FAF9F7;
+  border-top: 1px solid var(--color-theme-border);
+  border-bottom: 1px solid var(--color-theme-border);
+  color: var(--color-theme-ink);
+  margin-left: -24px;
+  margin-right: -24px;
+  padding: 12px 24px;
+  margin-top: 0;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+.prose-theme h2:first-child {
+  border-top: none;
+}
+.prose-theme h3 {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  color: var(--color-theme-accent);
+  margin-top: 24px;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+.prose-theme ul, .prose-theme ol, .prose-theme p {
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+.prose-theme li {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+.prose-theme strong {
+  font-weight: 600;
+}
+.markdown-body {
+  padding-bottom: 24px;
+}
