@@ -8,44 +8,40 @@ dotenv.config();
 
 const PORT = 3000;
 
-async function startServer() {
-  const app = express();
-  
-  // Increase payload limit for base64 images
-  app.use(express.json({ limit: '50mb' }));
-  
-  const ai = new GoogleGenAI({ 
-    apiKey: process.env.GEMINI_API_KEY,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      }
+// FIX 1: Instantiate the app globally so Vercel can export it cleanly
+const app = express();
+
+// Increase payload limit for base64 images
+app.use(express.json({ limit: '50mb' }));
+
+const ai = new GoogleGenAI({ 
+  apiKey: process.env.GEMINI_API_KEY,
+  httpOptions: {
+    headers: {
+      'User-Agent': 'aistudio-build',
     }
-  });
+  }
+});
 
-  app.post('/api/analyze-fridge', async (req, res) => {
-    try {
-      const { image, cuisine, dietaryMode } = req.body;
+// FIX 2: Listen for both endpoints to ensure Vercel rewrites don't throw 404 HTML pages
+app.post(['/api/analyze-fridge', '/analyze-fridge'], async (req, res) => {
+  try {
+    const { image, cuisine, dietaryMode } = req.body;
 
-      if (!image) {
-        return res.status(400).json({ error: 'Image is required' });
-      }
+    if (!image) {
+      return res.status(400).json({ error: 'Image is required' });
+    }
 
-      // Format user instructions for FridgeChef AI
-      const systemInstruction = `ROLE
-You are FridgeChef AI, a professional culinary analyst and nutrition 
-expert trained to identify ingredients from images and generate 
-structured, personalized meal recommendations. You think like a 
-Michelin-star chef but communicate like a practical home cooking guide.
+    // Format user instructions for FridgeChef AI
+    const systemInstruction = `ROLE
+You are FridgeChef AI, a professional culinary analyst and nutrition expert trained to identify ingredients from images and generate structured, personalized meal recommendations. You think like a Michelin-star chef but communicate like a practical home cooking guide.
 
 CONTEXT
-The user has uploaded a photo of their refrigerator or available 
-ingredients. You will also receive two user inputs:
+The user has uploaded a photo of their refrigerator or available ingredients. You will also receive two user inputs:
 - CUISINE PREFERENCE: ${cuisine || 'No preference'}
 - DIETARY MODE: ${dietaryMode || 'No restriction'}
 
-All recipe suggestions must strictly honor both inputs. Never deviate 
-from the dietary mode under any circumstance.
+All recipe suggestions must strictly honor both inputs. Never deviate from the dietary mode under any circumstance.
 
 DIETARY MODE DEFINITIONS
 - No restriction: Any ingredients and recipes are acceptable
@@ -56,14 +52,10 @@ DIETARY MODE DEFINITIONS
 - Gluten-Free: No wheat, barley, rye, or gluten-containing ingredients
 
 TASK
-Step 1 - Scan the entire image and identify every visible ingredient 
-with precision. Note quantity and freshness where visible.
-Step 2 - Cross-reference detected ingredients against the cuisine 
-preference and dietary mode to determine valid combinations.
-Step 3 - Generate exactly 3 distinct recipes using only detected 
-ingredients. Each recipe must use a different primary ingredient.
-Step 4 - For each recipe generate full structured output including 
-cook steps, nutrition estimate, and a professional chef tip.
+Step 1 - Scan the entire image and identify every visible ingredient with precision. Note quantity and freshness where visible.
+Step 2 - Cross-reference detected ingredients against the cuisine preference and dietary mode to determine valid combinations.
+Step 3 - Generate exactly 3 distinct recipes using only detected ingredients. Each recipe must use a different primary ingredient.
+Step 4 - For each recipe generate full structured output including cook steps, nutrition estimate, and a professional chef tip.
 Step 5 - Analyze what is missing and generate a targeted grocery list.
 Step 6 - Score the fridge on three dimensions.
 
@@ -131,29 +123,29 @@ CONSTRAINTS
 - Always match cuisine preference strictly
 - Maintain a professional warm and encouraging tone throughout`;
 
-      // Clean the base64 string
-      const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    // Clean the base64 string
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
-        contents: {
-          parts: [
-            { text: 'Please analyze this photo according to your system instructions.' },
-            { inlineData: { data: base64Data, mimeType: 'image/jpeg' } },
-          ],
-        },
-        config: {
-          systemInstruction,
-        }
-      });
+    // FIX 3: Swapped model identifier to 'gemini-2.5-flash' for production compatibility
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
+        { text: 'Please analyze this photo according to your system instructions.' },
+        { inlineData: { data: base64Data, mimeType: 'image/jpeg' } },
+      ],
+      config: {
+        systemInstruction,
+      }
+    });
 
-      res.json({ result: response.text });
-    } catch (error: any) {
-      console.error('Error generating response:', error);
-      res.status(500).json({ error: error.message || 'Failed to analyze fridge' });
-    }
-  });
+    res.json({ result: response.text });
+  } catch (error: any) {
+    console.error('Error generating response:', error);
+    res.status(500).json({ error: error.message || 'Failed to analyze fridge' });
+  }
+});
 
+async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -169,12 +161,12 @@ CONSTRAINTS
     });
   }
 
-app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
-// 1. Export the app instance for Vercel FIRST
+// 1. Export the app instance for Vercel FIRST (Now in scope!)
 export default app;
 
 // 2. Only start the local server if we aren't running inside Vercel's cloud environment
